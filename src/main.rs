@@ -70,6 +70,38 @@ impl State {
         self.write_byte(addr + 2, bytes[2]);
         self.write_byte(addr + 3, bytes[3]);
     }
+
+    fn run_instruction(&mut self) {
+        if (self.registers.pc % 4) != 0 {
+            panic!("TODO: implement exception");
+        }
+        let instruction = self.read_word(self.registers.pc);
+        let opcode = instruction & 0x0000_007F;
+        
+
+        match opcode {
+            0b0110111 => todo!("LUI"),
+            0b0010111 => todo!("AUIPC"),
+            0b1101111 => todo!("JAL"),
+            0b1100111 => todo!("JALR"),
+            _ => ()
+            
+            
+        }
+        let funct3 = (instruction & 0b111000000000000) >> 11;
+
+        match opcode {
+            0b1100011 => todo!("conditional branches"),
+            0b0000011 => todo!("load instructions"),
+            0b0100011 => todo!("store instructions"),
+            0b0010011 => todo!("integer register immediate instructions"),
+            0b0110011 => todo!("integer register register instructions"),
+            0b0001111 => todo!("memory ordering"),
+            0b1110011 => todo!("system"),
+            _ => panic!("NOT IMPLMENETED OPCODE"), // probably should do some exception, how?
+        }
+        
+    }
 }
 
 fn main() {
