@@ -209,3 +209,34 @@ fn test_add12i() {
     assert_eq!(add_12i(0b1111_1111_1110, 213487012), 213487010);
 }
 
+#[test]
+fn store() {
+    /*
+        lui x1, 1
+
+        sw x1, 0(x1)
+
+        sw x1, 4(x1)
+
+        sh, x1, 8(x1)
+
+        sb x1, 10(x1)
+
+        sb x1, 11(x1) 
+     */
+    let prg = [0xB7, 0x10, 0x00, 0x00, 0x23, 0xA0, 0x10, 0x00, 0x23, 0xA2, 0x10, 
+        0x00, 0x23, 0x94, 0x10, 0x00, 0x23, 0x85, 0x10, 0x00, 0xA3, 0x85, 0x10, 0x00];
+
+    let mut computer = State::new(&prg);
+    computer.run_instruction();
+    computer.run_instruction();
+    computer.run_instruction();
+    computer.run_instruction();
+    computer.run_instruction();
+    computer.run_instruction();
+
+    for b in (1<<12)..((1<<12) + 12) {
+        let val = computer.read_byte(b);
+        dbg!(b, val);
+    }
+}

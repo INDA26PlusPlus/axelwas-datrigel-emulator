@@ -178,36 +178,41 @@ impl<'a> State<'a> {
         }
         let instruction = self.read_word(self.registers.pc);
         let opcode = instruction & 0x0000_007F;
-        
 
         match opcode {
-            0b0110111 => return self.lui(instruction),
+            0b0110111 => self.lui(instruction),
             0b0010111 => todo!("AUIPC"),
             0b1101111 => todo!("JAL"),
             0b1100111 => todo!("JALR"),
-            _ => ()
-            
-            
-        }
-
-        match opcode {
             0b1100011 => todo!("conditional branches"),
             0b0000011 => todo!("load instructions"),
             0b0100011 => self.store_instructions(instruction),
             0b0010011 => todo!("integer register immediate instructions"),
             0b0110011 => todo!("integer register register instructions"),
-            0b0001111 => return self.memory_ordering(instruction),
-            0b1110011 => return self.system_instructions(instruction),
+            0b0001111 => self.memory_ordering(instruction),
+            0b1110011 => self.system_instructions(instruction),
             _ => panic!("NOT IMPLMENETED OPCODE"),
-        }
+        };
+
+        self.registers.pc = self.registers.pc + 4;
     }
 }
 
 fn main() {
-    let rom = [];
-    let mut computer = State::new(&rom);
-    loop {
-        computer.run_instruction();
+    let prg = [0xB7, 0x10, 0x00, 0x00, 0x23, 0xA0, 0x10, 0x00, 0x23, 0xA2, 0x10, 
+        0x00, 0x23, 0x94, 0x10, 0x00, 0x23, 0x85, 0x10, 0x00, 0xA3, 0x85, 0x10, 0x00];
+
+    let mut computer = State::new(&prg);
+    computer.run_instruction();
+    computer.run_instruction();
+    computer.run_instruction();
+    computer.run_instruction();
+    computer.run_instruction();
+    computer.run_instruction();
+
+    for b in (1<<12)..((1<<12) + 12) {
+        let val = computer.read_byte(b);
+        dbg!(b, val);
     }
 }
 
