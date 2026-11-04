@@ -1,9 +1,17 @@
 fn get_funct3(instruction: u32) -> u32 {
-    (instruction & 0b111000000000000) >> 11
+    (instruction & 0b11100000_00000000) >> 11
 }
 
 fn get_funct12(instruction: u32) -> u32 {
-    (instruction & (0b111111111111 << 20)) >> 20
+    (instruction & (0b1111_1111_1111_0000_0000_0000_0000_0000)) >> 20
+}
+
+fn get_rs1(instruction: u32) -> u32 {
+    (instruction & (0b1111_1000_0000_0000_0000)) >> 15
+}
+
+fn get_rd(instruction: u32) -> u32 {
+    (instruction & (0b1111_1000_0000)) >> 7
 }
 
 #[derive(Debug)]
@@ -83,8 +91,25 @@ impl<'a> State<'a> {
         self.write_byte(addr + 3, bytes[3]);
     }
 
+    fn memory_ordering(&mut self, instruction: u32) {
+        // Since this is single threaded all memory operations are in order. The instruction being valid however must be checked.
+
+        let funct3 = get_funct3(instruction);
+
+        if funct3 != 0 {
+            panic!("Inavlid/not implemented memory ordering instruction");
+        }
+    }
+
     fn system_instructions(&mut self, instruction: u32) {
         let funct12 = get_funct12(instruction);
+        let funct3 = get_funct3(instruction);
+        let rs1 = get_rs1(instruction);
+        let rd = get_rd(instruction);
+
+        if funct3 != 0 || rs1 != 0 || rd != 0{
+            panic!("Invalid system instruction");
+        }
 
         match funct12 {
             1 => dbg!(&self.registers), // EBREAK
@@ -117,7 +142,7 @@ impl<'a> State<'a> {
             0b0100011 => todo!("store instructions"),
             0b0010011 => todo!("integer register immediate instructions"),
             0b0110011 => todo!("integer register register instructions"),
-            0b0001111 => return, // memory ordering can be ignored, because all execution is in order
+            0b0001111 => return self.memory_ordering(instruction),
             0b1110011 => return self.system_instructions(instruction),
             _ => panic!("NOT IMPLMENETED OPCODE"),
         }
