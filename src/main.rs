@@ -37,24 +37,25 @@ impl Registers {
 }
 
 #[derive(Debug)]
-struct State {
+struct State<'a> {
     registers: Registers,
-    ram: [u8; 0xFFFFFF], // 2 ^ 24 = 16.77 MB
-    rom: [u8; 0xFFFFFF]
+    ram: Vec<u8>, 
+    rom: &'a [u8]
 }
 
-impl State {
-    fn new(rom: [u8; 0xFFFFFF]) -> Self {
-        Self {
+impl<'a> State<'a> {
+    fn new(rom: &'a [u8]) -> State<'a> {
+        let ram = vec![0u8; 0xFFFFFF]; // 16 MB bytes of ram
+        State {
             registers: Registers::new(),
-            ram: [0; 0xFFFFFF],
+            ram,
             rom
         }
     }
     fn read_byte(&self, addr: u32) -> u8 {
         match addr {
-            a if a < 0xFFFFFF => self.ram[a as usize],
-            a if a > 0x0800_0000 && a < 0x08FFFFFF => self.rom[a as usize - 0x0800_0000],
+            a if a < 0xFFFFFF => self.ram.get(a as usize).map(|v| *v).unwrap_or(0),
+            a if a > 0x0800_0000 && a < 0x08FFFFFF => self.rom.get(a as usize - 0x0800_0000).map(|v| *v).unwrap_or(0),
             _ => 0
         }
     }
@@ -68,7 +69,7 @@ impl State {
 
     fn write_byte(&mut self, addr: u32, value: u8) {
         match addr {
-            a if a < 0xFFFFFF => self.ram[a as usize] = value,
+            a if (a as usize) < self.ram.len() => self.ram[a as usize] = value,
             _ => ()
         }
     }
@@ -85,8 +86,8 @@ impl State {
         let funct12 = get_funct12(instruction);
 
         match funct12 {
-            1 => dbg!(&self.registers),
-            0 => panic!("ECALL not valid, implemented non privellage instruction set"),
+            1 => dbg!(&self.registers), // EBREAK
+            0 => panic!("ECALL not valid, implemented non privellage instruction set"), // ECALL
             _ => panic!("Invalid system instruction")
         };
     }
@@ -123,9 +124,12 @@ impl State {
 }
 
 fn main() {
-    let mut computer = State::new([0; 0xFFFFFF]);
+    let rom = [];
+    let mut computer = State::new(&rom);
     loop {
         computer.run_instruction();
     }
-    println!("Hello, world!");
 }
+
+#[cfg(test)]
+mod tests;
