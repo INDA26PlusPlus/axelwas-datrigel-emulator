@@ -55,16 +55,17 @@ impl<'a> State<'a> {
     fn read_byte(&self, addr: u32) -> u8 {
         match addr {
             a if a < 0xFFFFFF => self.ram.get(a as usize).map(|v| *v).unwrap_or(0),
-            a if a > 0x0800_0000 && a < 0x08FFFFFF => self.rom.get(a as usize - 0x0800_0000).map(|v| *v).unwrap_or(0),
+            a if a >= 0x0800_0000 && a < 0x08FFFFFF => self.rom.get(a as usize - 0x0800_0000).map(|v| *v).unwrap_or(0),
             _ => 0
         }
     }
 
     fn read_word(&self, addr: u32) -> u32 {
-        u32::from_le_bytes([self.read_byte(addr), 
+        let bytes = [self.read_byte(addr), 
             self.read_byte(addr + 1), 
             self.read_byte(addr + 2), 
-            self.read_byte(addr + 3)])
+            self.read_byte(addr + 3)];
+        u32::from_le_bytes(bytes)
     }
 
     fn write_byte(&mut self, addr: u32, value: u8) {
