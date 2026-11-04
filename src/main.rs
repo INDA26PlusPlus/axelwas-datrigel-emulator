@@ -14,6 +14,10 @@ fn get_rd(instruction: u32) -> u32 {
     (instruction & (0b1111_1000_0000)) >> 7
 }
 
+fn get_imm20(instruction: u32) -> u32 {
+    (instruction & 0b1111_1111_1111_1111_1111_0000_0000_0000) >> 12
+}
+
 #[derive(Debug)]
 struct Registers {
     x_registers: [u32; 31],
@@ -24,14 +28,14 @@ impl Registers {
     fn get(&self, register: u32) -> u32 {
         match register {
             0 => 0,
-            x if x < 32 => self.x_registers[x as usize],
+            x if x < 32 => self.x_registers[(x - 1) as usize],
             _ => panic!("Illegal register")
         }
     }
     fn write(&mut self, register: u32, value: u32) {
         match register {
             0 => (),
-            x if x < 32 => self.x_registers[x as usize] = value,
+            x if x < 32 => self.x_registers[(x - 1) as usize] = value,
             _ => panic!("Illegal register")
         }
     }
@@ -117,6 +121,15 @@ impl<'a> State<'a> {
             _ => panic!("Invalid system instruction")
         };
     }
+
+    fn lui(&mut self, instruction: u32) {
+        let imm = get_imm20(instruction);
+        let rd = get_rd(instruction);
+
+        dbg!(imm, rd);
+
+        self.registers.write(rd, imm << 12);
+    }
     
     fn run_instruction(&mut self) {
         if (self.registers.pc % 4) != 0 {
@@ -127,7 +140,7 @@ impl<'a> State<'a> {
         
 
         match opcode {
-            0b0110111 => todo!("LUI"),
+            0b0110111 => return self.lui(instruction),
             0b0010111 => todo!("AUIPC"),
             0b1101111 => todo!("JAL"),
             0b1100111 => todo!("JALR"),

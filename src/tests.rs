@@ -168,3 +168,35 @@ fn invalid_fence3() {
     let mut computer = State::new(&prg);
     computer.run_instruction();
 }
+
+#[test]
+fn lui() {
+    let prg = [0xb7, 0x77, 0x32, 0x1e];
+
+    let mut computer = State::new(&prg);
+    computer.run_instruction();
+    dbg!(&computer.registers);
+
+    assert_eq!(computer.registers.get(15), 0x1e327 << 12);
+}
+
+#[test]
+fn lui_x32() {
+    let prg = [0xb7, 0x1f, 0xbf, 0x9f];
+    let mut computer = State::new(&prg);
+    computer.run_instruction();
+    dbg!(&computer.registers);
+
+    assert_eq!(computer.registers.get(31), 654321 << 12);
+}
+
+#[test]
+fn lui_write_x0() {
+    let prg = [0b00110111, 0b0000_0000, 1, 1];
+
+    let mut computer = State::new(&prg);
+    computer.run_instruction();
+    dbg!(&computer.registers);
+
+    assert_eq!(computer.registers.get(0), 0);
+}
