@@ -18,6 +18,16 @@ fn get_imm20(instruction: u32) -> u32 {
     (instruction & 0b1111_1111_1111_1111_1111_0000_0000_0000) >> 12
 }
 
+fn add_12i(to_add: u32, value: u32) -> u32 {
+    if (to_add & 0b1000_0000_0000) != 0 {
+        // value negative
+        let actually_add = to_add | 0b1111_1111_1111_1111_1111_0000_0000_0000;
+        value.overflowing_add(actually_add).0
+    } else {
+        value.overflowing_add(to_add).0
+    }
+}
+
 #[derive(Debug)]
 struct Registers {
     x_registers: [u32; 31],

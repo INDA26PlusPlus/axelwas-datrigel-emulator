@@ -200,3 +200,12 @@ fn lui_write_x0() {
 
     assert_eq!(computer.registers.get(0), 0);
 }
+
+#[test]
+fn test_add12i() {
+    assert_eq!(add_12i(5, 6), 11);
+    assert_eq!(add_12i(0b1111_1111_1111, 6), 5);
+    assert_eq!(add_12i(0b1111_1111_1111, 213487012), 213487011);
+    assert_eq!(add_12i(0b1111_1111_1110, 213487012), 213487010);
+}
+
