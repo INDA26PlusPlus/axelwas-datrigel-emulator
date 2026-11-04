@@ -10,12 +10,20 @@ fn get_rs1(instruction: u32) -> u32 {
     (instruction & (0b1111_1000_0000_0000_0000)) >> 15
 }
 
+fn get_rs2(instruction: u32) -> u32 {
+    (instruction & (0b1_1111_0000_0000_0000_0000_0000)) >> 15
+}
+
 fn get_rd(instruction: u32) -> u32 {
     (instruction & (0b1111_1000_0000)) >> 7
 }
 
 fn get_imm20(instruction: u32) -> u32 {
     (instruction & 0b1111_1111_1111_1111_1111_0000_0000_0000) >> 12
+}
+
+fn get_imm12(instruction: u32) -> u32 {
+    (instruction & 0b1111_1111_1111_0000_0000_0000_0000_0000) >> 20
 }
 
 fn add_12i(to_add: u32, value: u32) -> u32 {
@@ -141,6 +149,29 @@ impl<'a> State<'a> {
         self.registers.write(rd, imm << 12);
     }
     
+    fn store_instructions(&mut self, instruction: u32) {
+        let imm = (get_imm12(instruction) & (0b1111_1110_0000)) | get_rd(instruction);
+        let rs1 = get_rs1(instruction);
+        let rs2 = get_rs2(instruction);
+        let funct3 = get_funct3(instruction);
+        
+        let rs1_value = self.registers.get(rs1);
+        let rs2_value = self.registers.get(rs2);
+
+        let effective_address = add_12i(imm, rs1_value);
+
+
+        match funct3 {
+            0b000 => self.write_byte(effective_address, rs2_value.to_le_bytes()[0]), // SB
+            0b001 => {
+                self.write_byte(effective_address, rs2_value.to_le_bytes()[0]);
+                self.write_byte(effective_address, rs2_value.to_le_bytes()[1]);
+            }, // SH
+            0b010 => self.write_word(effective_address, rs2_value), // SW
+            _ => panic!("non implemented store instruction")
+        }
+    }
+
     fn run_instruction(&mut self) {
         if (self.registers.pc % 4) != 0 {
             panic!("TODO: implement exception");
@@ -162,7 +193,7 @@ impl<'a> State<'a> {
         match opcode {
             0b1100011 => todo!("conditional branches"),
             0b0000011 => todo!("load instructions"),
-            0b0100011 => todo!("store instructions"),
+            0b0100011 => self.store_instructions(instruction),
             0b0010011 => todo!("integer register immediate instructions"),
             0b0110011 => todo!("integer register register instructions"),
             0b0001111 => return self.memory_ordering(instruction),
