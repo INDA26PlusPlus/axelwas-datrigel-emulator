@@ -1,3 +1,12 @@
+fn get_funct3(instruction: u32) -> u32 {
+    (instruction & 0b111000000000000) >> 11
+}
+
+fn get_funct12(instruction: u32) -> u32 {
+    (instruction & (0b111111111111 << 20)) >> 20
+}
+
+#[derive(Debug)]
 struct Registers {
     x_registers: [u32; 31],
     pc: u32
@@ -27,6 +36,7 @@ impl Registers {
     }
 }
 
+#[derive(Debug)]
 struct State {
     registers: Registers,
     ram: [u8; 0xFFFFFF], // 2 ^ 24 = 16.77 MB
@@ -71,6 +81,16 @@ impl State {
         self.write_byte(addr + 3, bytes[3]);
     }
 
+    fn system_instructions(&mut self, instruction: u32) {
+        let funct12 = get_funct12(instruction);
+
+        match funct12 {
+            1 => dbg!(&self.registers),
+            0 => panic!("ECALL not valid, implemented non privellage instruction set"),
+            _ => panic!("Invalid system instruction")
+        };
+    }
+    
     fn run_instruction(&mut self) {
         if (self.registers.pc % 4) != 0 {
             panic!("TODO: implement exception");
@@ -88,7 +108,6 @@ impl State {
             
             
         }
-        let funct3 = (instruction & 0b111000000000000) >> 11;
 
         match opcode {
             0b1100011 => todo!("conditional branches"),
@@ -96,15 +115,17 @@ impl State {
             0b0100011 => todo!("store instructions"),
             0b0010011 => todo!("integer register immediate instructions"),
             0b0110011 => todo!("integer register register instructions"),
-            0b0001111 => todo!("memory ordering"),
-            0b1110011 => todo!("system"),
-            _ => panic!("NOT IMPLMENETED OPCODE"), // probably should do some exception, how?
+            0b0001111 => return, // memory ordering can be ignored, because all execution is in order
+            0b1110011 => return self.system_instructions(instruction),
+            _ => panic!("NOT IMPLMENETED OPCODE"),
         }
-        
     }
 }
 
 fn main() {
-    let computer = State::new([0; 0xFFFFFF]);
+    let mut computer = State::new([0; 0xFFFFFF]);
+    loop {
+        computer.run_instruction();
+    }
     println!("Hello, world!");
 }
