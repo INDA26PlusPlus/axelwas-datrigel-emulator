@@ -259,3 +259,34 @@ fn store() {
     let res = std::panic::catch_unwind(move || computer.run_instruction());
     assert!(res.is_err());
 }
+
+#[test]
+fn store_and_load() {
+    /*
+    0:	fa700093          	li	ra,-2
+    4:	00101223          	sh	ra,4(zero) # 4 <_boot+0x4>
+    8:	00405103          	lhu	sp,4(zero) # 4 <_boot+0x4>
+    c:	00401183          	lh	gp,4(zero) # 4 <_boot+0x4>
+    
+     */
+    let prg = [
+            0x93, 0x00, 0xe0, 0xff,
+            0x23, 0x12, 0x10, 0x00,
+            0x03, 0x51, 0x40, 0x00,
+            0x83, 0x11, 0x40, 0x00
+    ];
+
+    let mut computer = State::new(&prg);
+
+    computer.run_instruction();
+    computer.run_instruction();
+    println!("{:?}", &computer.ram[0..32]);
+    computer.run_instruction();
+    println!("{:?}", computer.registers.x_registers);
+    computer.run_instruction();
+    println!("{:?}", computer.registers.x_registers);
+
+    assert_eq!(computer.registers.x_registers[0], 4294967294);
+    assert_eq!(computer.registers.x_registers[1], 65534);
+    assert_eq!(computer.registers.x_registers[2], 4294967294);
+}

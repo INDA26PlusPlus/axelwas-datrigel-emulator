@@ -107,7 +107,7 @@ struct State<'a> {
 
 impl<'a> State<'a> {
     fn new(rom: &'a [u8]) -> State<'a> {
-        let ram = vec![0u8; 0xFFFFFF]; // 16 MB bytes of ram
+        let ram = vec![0u8; 0xFFFF]; // _16 MB bytes of ram
         State {
             registers: Registers::new(),
             ram,
@@ -310,7 +310,7 @@ impl<'a> State<'a> {
 
         // funct3 arithmetic instructions matching.
         let rd_value = match funct3 {
-            0b000 => rs1_value + imm,
+            0b000 => rs1_value.overflowing_add(sign_extended_imm).0, 
             0b010 => {if (rs1_value as i32) < sign_extended_imm as i32 {1} else {0}},
             0b011 => {if rs1_value < imm {1} else {0}},
             0b100 => rs1_value ^ sign_extended_imm,
