@@ -1,4 +1,5 @@
 use core::panic;
+use std::thread;
 
 fn get_funct3(instruction: u32) -> u32 {
     (instruction & 0b111_0000_0000_0000) >> 12
@@ -228,7 +229,7 @@ impl<'a> State<'a> {
         };
         // Adds imm to the PC
         if jump {
-            self.registers.pc = self.registers.pc + imm - 4; // remove 4 since we add 4 on return
+            self.registers.pc = self.registers.pc.overflowing_add(imm).0.overflowing_sub(4).0; // remove 4 since we add 4 on return
         }
     }
 
@@ -376,25 +377,53 @@ impl<'a> State<'a> {
 }
 
 fn main() {
+    /*
+            addi x1, x0, 0
+            addi x2, x0, 1
+            addi x3, x0, 20
+            
+            ebreak
+            add x4, x1, x2
+            addi x1, x2, 0
+            addi x2, x4, 0
+            addi x4, x4, -1
+            beq x4, x0, -20
+            
+            beq x0, x0, 0
+    
+    00000093          addi x1, x0, 0
+    00100113          addi x2, x0, 1
+    01400193          addi x3, x0, 20
+    00100073          ebreak
+    00208233          add x4, x1, x2
+    00010093          addi x1, x2, 0
+    00020113          addi x2, x4, 0
+    fff20213          addi x4, x4, -1
+    fe020263          beq x4, x0, -20
+    00000063          beq x0, x0, 0
+    
+     */
+    
+
     let prg = [
-        0xB7, 0x10, 0x00, 0x00, 
-        0x37, 0x81, 0xa9, 0xcb,
-        0x13, 0x01, 0x51, 0x76,
-        0x23, 0xA0, 0x20, 0x00, 
-        0x23, 0xA2, 0x20, 0x00, 
-        0x23, 0x94, 0x20, 0x00, 
-        0x23, 0x85, 0x20, 0x00,
-        0xA3, 0x85, 0x20, 0x00];
+        0x93, 0x00, 0x00, 0x00, 
+        0x13, 0x01, 0x10, 0x00,
+        0x93, 0x01, 0x40, 0x01,
+        0x73, 0x00, 0x10, 0x00, 
+        0x33, 0x82, 0x20, 0x00, 
+        0x93, 0x00, 0x01, 0x00, 
+        0x13, 0x01, 0x02, 0x00,
+        0x13, 0x02, 0xf2, 0xff,
+        0x63, 0x02, 0x02, 0xfe,
+        0x63, 0x00, 0x00, 0x00,
+    ];
 
     let mut computer = State::new(&prg);
-    computer.run_instruction();
-    computer.run_instruction();
-    computer.run_instruction();
-    computer.run_instruction();
-    computer.run_instruction();
-    computer.run_instruction();
-    computer.run_instruction();
-    computer.run_instruction();
+
+    loop {
+        computer.run_instruction();
+        thread::sleep(std::time::Duration::from_millis(1));
+    }
 
     println!("{:?}", &computer.registers.get(2));
     println!("{:?}", &computer.ram[4096..4120]);
