@@ -378,28 +378,16 @@ impl<'a> State<'a> {
 
 fn main() {
     /*
-            addi x1, x0, 0
-            addi x2, x0, 1
-            addi x3, x0, 20
-            
-            ebreak
-            add x4, x1, x2
-            addi x1, x2, 0
-            addi x2, x4, 0
-            addi x4, x4, -1
-            beq x4, x0, -20
-            
-            beq x0, x0, 0
-    
     00000093          addi x1, x0, 0
     00100113          addi x2, x0, 1
     01400193          addi x3, x0, 20
+    00100f93          addi x31, x0, 1
     00100073          ebreak
     00208233          add x4, x1, x2
     00010093          addi x1, x2, 0
     00020113          addi x2, x4, 0
-    fff20213          addi x4, x4, -1
-    fe020263          beq x4, x0, -20
+    fff18193          addi x3, x3, -1
+    fe3fc6e3          blt x31, x3, -20
     00000063          beq x0, x0, 0
     
      */
@@ -409,12 +397,13 @@ fn main() {
         0x93, 0x00, 0x00, 0x00, 
         0x13, 0x01, 0x10, 0x00,
         0x93, 0x01, 0x40, 0x01,
+        0x93, 0x0f, 0x10, 0x00,
         0x73, 0x00, 0x10, 0x00, 
         0x33, 0x82, 0x20, 0x00, 
         0x93, 0x00, 0x01, 0x00, 
         0x13, 0x01, 0x02, 0x00,
-        0x13, 0x02, 0xf2, 0xff,
-        0x63, 0x02, 0x02, 0xfe,
+        0x93, 0x81, 0xf1, 0xff,
+        0xe3, 0xc6, 0x3f, 0xfe,
         0x63, 0x00, 0x00, 0x00,
     ];
 
@@ -424,9 +413,6 @@ fn main() {
         computer.run_instruction();
         thread::sleep(std::time::Duration::from_millis(1));
     }
-
-    println!("{:?}", &computer.registers.get(2));
-    println!("{:?}", &computer.ram[4096..4120]);
     
 }
 
