@@ -166,7 +166,7 @@ impl<'a> State<'a> {
         }
 
         match funct12 {
-            1 => dbg!(&self.registers), // EBREAK
+            1 => println!("x: {:?} pc: {}", self.registers.x_registers, self.registers.pc), // EBREAK
             0 => panic!("ECALL not valid, implemented non privellage instruction set"), // ECALL
             _ => panic!("Invalid system instruction")
         };
