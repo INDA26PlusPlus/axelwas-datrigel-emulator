@@ -205,25 +205,25 @@ impl<'a> State<'a> {
     fn conditional_branches(&mut self, instruction: u32) {
         let imm = get_imm_b_type(instruction);
         let funct3 = get_funct3(instruction);
-        let rs1_addr = get_rs1(instruction);
-        let rs2_addr = get_rs2(instruction);
+        let rs1 = get_rs1(instruction);
+        let rs2 = get_rs2(instruction);
 
         // Fetches value on address rs1,rs2 
-        let rs1 = self.read_word(rs1_addr);
-        let rs2 = self.read_word(rs2_addr);
+        let rs1_value = self.registers.get(rs1);
+        let rs2_value = self.registers.get(rs2);
 
         // matches funct3 input to condition.
         let jump = match funct3 {
-            0b000 => rs1 == rs2,
-            0b001 => rs1 != rs2,
+            0b000 => rs1_value == rs2_value,
+            0b001 => rs1_value != rs2_value,
             0b010 => panic!("Reserved conditional branche struct3"),
             0b011 => panic!("Reserved conditional branche struct3"),
             // greter or equal (Signed)
-            0b101 => rs1 as i32 >= rs2 as i32,
+            0b101 => rs1_value as i32 >= rs2_value as i32,
             // less than (Signed)
-            0b100 => (rs1 as i32) < rs2 as i32,
-            0b111 => rs1 >= rs2,
-            0b110 => rs1 < rs2,
+            0b100 => (rs1_value as i32) < rs2_value as i32,
+            0b111 => rs1_value >= rs2_value,
+            0b110 => rs1_value < rs2_value,
             _ => panic!("funct3 is larger than 3 bits")
         };
         // Adds imm to the PC
@@ -267,7 +267,7 @@ impl<'a> State<'a> {
     // add upper immediate and PC to rd
     fn auipc(&mut self, instruction: u32) {
         // Shifts the bits 12 to the left
-        let imm = (get_imm20(instruction) + self.registers.pc);
+        let imm = get_imm20(instruction) + self.registers.pc;
         let rd = get_rd(instruction);
 
         self.write_word(rd, imm);
@@ -330,13 +330,13 @@ impl<'a> State<'a> {
         let rs1 = get_rs1(instruction);
         let rs2 = get_rs2(instruction);
 
-        let rs1_value = self.read_word(rs1);
-        let rs2_value = self.read_word(rs2);
+        let rs1_value = self.registers.get(rs1);
+        let rs2_value = self.registers.get(rs2);
         // To see if the alternativ instruction is used.
         let alternativ = get_imm12(instruction) >= 2048;
 
         let rd_value = match funct3 {
-            0b000 => if alternativ {rs1_value - rs2_value} else {rs1_value + rs2_value},
+            0b000 => if alternativ {rs1_value - rs2_value} else {rs1_value + rs2_value}, // add i12?
             0b010 => if (rs1_value as i32) < (rs2_value as i32) {1} else {0},
             0b011 => if rs1_value < rs2_value {1} else {2},
             0b100 => rs1_value ^ rs2_value,
@@ -346,7 +346,7 @@ impl<'a> State<'a> {
             0b101 => if alternativ {((rs1_value as i32) >> (rs2_value & 0b1111_1)) as u32} else {rs1_value >> (rs2_value & 0b1111_1)},
             _ => panic!("Invalid funct3 input")
         };
-        self.write_word(rd, rd_value);
+        self.registers.write(rd, rd_value);
     }
 
     fn run_instruction(&mut self) {
