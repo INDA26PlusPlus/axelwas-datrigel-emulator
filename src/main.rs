@@ -237,9 +237,9 @@ impl<'a> State<'a> {
         let imm = get_imm12(instruction);
         let funct3 = get_funct3(instruction);
         let rs1 = get_rs1(instruction);
-        let rd_addr = get_rd(instruction);
+        let rd = get_rd(instruction);
 
-        let rd = match funct3 {
+        let rd_value = match funct3 {
             // Signed extend
             0b000 => {
                 let buff = self.read_byte(rs1 + imm);
@@ -261,7 +261,7 @@ impl<'a> State<'a> {
             _ => panic!("Invalid funct3 input")
         };
         // Write to rd_addr the value.
-        self.write_word(rd_addr, rd);
+        self.registers.write(rd, rd_value);
     }
 
     // add upper immediate and PC to rd
@@ -270,7 +270,7 @@ impl<'a> State<'a> {
         let imm = get_imm20(instruction) + self.registers.pc;
         let rd = get_rd(instruction);
 
-        self.write_word(rd, imm);
+        self.registers.write(rd, imm);
     }
 
     // Unconditional jump
@@ -280,7 +280,7 @@ impl<'a> State<'a> {
         
         let rd_value = self.registers.pc + 4;
         self.registers.pc = self.registers.pc + imm;
-        self.write_word(rd, rd_value);
+        self.registers.write(rd, rd_value);
     }
 
     // Unconditional jump to specifik register.
@@ -291,7 +291,7 @@ impl<'a> State<'a> {
 
         let rd_value = self.registers.pc + 4;
         self.registers.pc = self.read_word(rs1) + imm;
-        self.write_word(rd, rd_value);
+        self.registers.write(rd, rd_value);
     }
 
     // Takes rs1 and imm and generates output to rd. (Arithmetic operations)
@@ -358,14 +358,14 @@ impl<'a> State<'a> {
 
         match opcode {
             0b0110111 => self.lui(instruction),
-            0b0010111 => todo!("AUIPC"),
-            0b1101111 => todo!("JAL"),
-            0b1100111 => todo!("JALR"),
-            0b1100011 => todo!("conditional branches"),
-            0b0000011 => todo!("load instructions"),
+            0b0010111 => self.auipc(instruction),
+            0b1101111 => self.jal(instruction),
+            0b1100111 => self.jalr(instruction),
+            0b1100011 => self.conditional_branches(instruction),
+            0b0000011 => self.load_instructions(instruction),
             0b0100011 => self.store_instructions(instruction),
             0b0010011 => self.integer_register_immediate_instructions(instruction),
-            0b0110011 => todo!("integer register register instructions"),
+            0b0110011 => self.integer_register_register_instructions(instruction),
             0b0001111 => self.memory_ordering(instruction),
             0b1110011 => self.system_instructions(instruction),
             _ => panic!("NOT IMPLMENETED OPCODE"),
