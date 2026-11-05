@@ -1,7 +1,7 @@
 use core::panic;
 
 fn get_funct3(instruction: u32) -> u32 {
-    (instruction & 0b11100000_00000000) >> 11
+    (instruction & 0b111_0000_0000_0000) >> 12
 }
 
 fn get_funct12(instruction: u32) -> u32 {
@@ -13,7 +13,7 @@ fn get_rs1(instruction: u32) -> u32 {
 }
 
 fn get_rs2(instruction: u32) -> u32 {
-    (instruction & (0b1_1111_0000_0000_0000_0000_0000)) >> 15
+    (instruction & (0b1_1111_0000_0000_0000_0000_0000)) >> 20
 }
 
 fn get_rd(instruction: u32) -> u32 {
@@ -176,8 +176,6 @@ impl<'a> State<'a> {
         let imm = get_imm20(instruction);
         let rd = get_rd(instruction);
 
-        dbg!(imm, rd);
-
         self.registers.write(rd, imm << 12);
     }
     
@@ -192,16 +190,17 @@ impl<'a> State<'a> {
 
         let effective_address = add_12i(imm, rs1_value);
 
-
         match funct3 {
             0b000 => self.write_byte(effective_address, rs2_value.to_le_bytes()[0]), // SB
             0b001 => {
                 self.write_byte(effective_address, rs2_value.to_le_bytes()[0]);
-                self.write_byte(effective_address, rs2_value.to_le_bytes()[1]);
+                self.write_byte(effective_address + 1, rs2_value.to_le_bytes()[1]);
             }, // SH
             0b010 => self.write_word(effective_address, rs2_value), // SW
             _ => panic!("non implemented store instruction")
         }
+
+        println!("{:?}", &self.ram[4096..4120]);
     }
 
     // opcode => type-B instruction.
@@ -305,13 +304,15 @@ impl<'a> State<'a> {
         let imm = get_imm12(instruction);
 
         let sign_extended_imm = (((imm as i32) << 20) >> 20) as u32;
-        let rs1_value = self.read_word(rs1);
+        let rs1_value = self.registers.get(rs1);
 
         let shamt = imm & 0b000000011111;
 
+        
+
         // funct3 arithmetic instructions matching.
         let rd_value = match funct3 {
-            0b000 => self.read_word(rs1) + imm,
+            0b000 => rs1_value + imm,
             0b010 => {if (rs1_value as i32) < sign_extended_imm as i32 {1} else {0}},
             0b011 => {if rs1_value < imm {1} else {0}},
             0b100 => rs1_value ^ sign_extended_imm,
@@ -321,7 +322,7 @@ impl<'a> State<'a> {
             0b101 => {if imm > 2048 {(rs1_value as i32 >> (shamt as i32)) as u32} else {rs1_value >> shamt}},
             _ => panic!("Invalid funct3 input")
         };
-        self.write_word(rd, rd_value);
+        self.registers.write(rd, rd_value);
     }
 
     // Bastic arithmetic operations between two registers
@@ -365,7 +366,7 @@ impl<'a> State<'a> {
             0b1100011 => todo!("conditional branches"),
             0b0000011 => todo!("load instructions"),
             0b0100011 => self.store_instructions(instruction),
-            0b0010011 => todo!("integer register immediate instructions"),
+            0b0010011 => self.integer_register_immediate_instructions(instruction),
             0b0110011 => todo!("integer register register instructions"),
             0b0001111 => self.memory_ordering(instruction),
             0b1110011 => self.system_instructions(instruction),
@@ -377,8 +378,15 @@ impl<'a> State<'a> {
 }
 
 fn main() {
-    let prg = [0xB7, 0x10, 0x00, 0x00, 0x23, 0xA0, 0x10, 0x00, 0x23, 0xA2, 0x10, 
-        0x00, 0x23, 0x94, 0x10, 0x00, 0x23, 0x85, 0x10, 0x00, 0xA3, 0x85, 0x10, 0x00];
+    let prg = [
+        0xB7, 0x10, 0x00, 0x00, 
+        0x37, 0x81, 0xa9, 0xcb,
+        0x13, 0x01, 0x51, 0x76,
+        0x23, 0xA0, 0x20, 0x00, 
+        0x23, 0xA2, 0x20, 0x00, 
+        0x23, 0x94, 0x20, 0x00, 
+        0x23, 0x85, 0x20, 0x00,
+        0xA3, 0x85, 0x20, 0x00];
 
     let mut computer = State::new(&prg);
     computer.run_instruction();
@@ -387,11 +395,12 @@ fn main() {
     computer.run_instruction();
     computer.run_instruction();
     computer.run_instruction();
+    computer.run_instruction();
+    computer.run_instruction();
 
-    for b in (1<<12)..((1<<12) + 12) {
-        let val = computer.read_byte(b);
-        dbg!(b, val);
-    }
+    println!("{:?}", &computer.registers.get(2));
+    println!("{:?}", &computer.ram[4096..4120]);
+    
 }
 
 #[cfg(test)]

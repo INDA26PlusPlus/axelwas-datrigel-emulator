@@ -145,7 +145,7 @@ fn fence() {
 #[test]
 #[should_panic(expected = "Inavlid/not implemented memory ordering instruction")]
 fn invalid_fence1() {
-    let prg = [0b0001111, 0b00100000, 0, 0];
+    let prg = [0b0001111, 0b0010_0000, 0, 0];
 
     let mut computer = State::new(&prg);
     computer.run_instruction();
@@ -154,7 +154,7 @@ fn invalid_fence1() {
 #[test]
 #[should_panic(expected = "Inavlid/not implemented memory ordering instruction")]
 fn invalid_fence2() {
-    let prg = [0b0001111, 0b01000000, 0, 0];
+    let prg = [0b0001111, 0b0100_0000, 0, 0];
 
     let mut computer = State::new(&prg);
     computer.run_instruction();
@@ -163,7 +163,7 @@ fn invalid_fence2() {
 #[test]
 #[should_panic(expected = "Inavlid/not implemented memory ordering instruction")]
 fn invalid_fence3() {
-    let prg = [0b0001111, 0b10000000, 0, 0];
+    let prg = [0b0001111, 0b0001_0000, 0, 0];
 
     let mut computer = State::new(&prg);
     computer.run_instruction();
@@ -210,22 +210,37 @@ fn test_add12i() {
 }
 
 #[test]
+fn basic_addi() {
+    let prg = [0x13, 0x01, 0x50, 0x76];
+
+    let mut computer = State::new(&prg);
+    computer.run_instruction();
+
+    assert_eq!(computer.registers.get(2), 0x765);
+}
+
+#[test]
 fn store() {
     /*
-        lui x1, 1
 
-        sw x1, 0(x1)
-
-        sw x1, 4(x1)
-
-        sh, x1, 8(x1)
-
-        sb x1, 10(x1)
-
-        sb x1, 11(x1) 
+        0:	000010b7          	lui	ra,0x1
+        4:	cba98137          	lui	sp,0xcba98
+        8:	76510113          	addi	sp,sp,1893
+        c:	0020a023          	sw	sp,0(ra) 
+        10:	0020a223          	sw	sp,4(ra)
+        14:	00209423          	sh	sp,8(ra)
+        18:	00208523          	sb	sp,10(ra)
+        1c:	002085a3          	sb	sp,11(ra)
      */
-    let prg = [0xB7, 0x10, 0x00, 0x00, 0x23, 0xA0, 0x10, 0x00, 0x23, 0xA2, 0x10, 
-        0x00, 0x23, 0x94, 0x10, 0x00, 0x23, 0x85, 0x10, 0x00, 0xA3, 0x85, 0x10, 0x00];
+    let prg = [
+        0xB7, 0x10, 0x00, 0x00, 
+        0x37, 0x81, 0xa9, 0xcb,
+        0x13, 0x01, 0x51, 0x76,
+        0x23, 0xA0, 0x20, 0x00, 
+        0x23, 0xA2, 0x20, 0x00, 
+        0x23, 0x94, 0x20, 0x00, 
+        0x23, 0x85, 0x20, 0x00,
+        0xA3, 0x85, 0x20, 0x00];
 
     let mut computer = State::new(&prg);
     computer.run_instruction();
@@ -234,9 +249,13 @@ fn store() {
     computer.run_instruction();
     computer.run_instruction();
     computer.run_instruction();
+    computer.run_instruction();
+    computer.run_instruction();
 
-    for b in (1<<12)..((1<<12) + 12) {
-        let val = computer.read_byte(b);
-        dbg!(b, val);
-    }
+    let to_compare = [0, 101, 135, 169, 203, 101, 135, 169, 203, 101, 135, 101, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let slice = &computer.ram[4095..4120];
+    assert!(slice.eq(&to_compare));
+    
+    let res = std::panic::catch_unwind(move || computer.run_instruction());
+    assert!(res.is_err());
 }
