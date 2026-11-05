@@ -228,7 +228,7 @@ impl<'a> State<'a> {
         };
         // Adds imm to the PC
         if jump {
-            self.registers.pc = self.registers.pc + imm;
+            self.registers.pc = self.registers.pc + imm - 4; // remove 4 since we add 4 on return
         }
     }
 
@@ -279,7 +279,7 @@ impl<'a> State<'a> {
         let rd = get_rd(instruction);
         
         let rd_value = self.registers.pc + 4;
-        self.registers.pc = self.registers.pc + imm;
+        self.registers.pc = self.registers.pc + imm - 4;
         self.registers.write(rd, rd_value);
     }
 
@@ -290,7 +290,7 @@ impl<'a> State<'a> {
         let rs1 = get_rs1(instruction);
 
         let rd_value = self.registers.pc + 4;
-        self.registers.pc = self.read_word(rs1) + imm;
+        self.registers.pc = self.read_word(rs1) + imm - 4;
         self.registers.write(rd, rd_value);
     }
 
