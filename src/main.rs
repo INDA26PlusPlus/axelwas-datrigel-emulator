@@ -199,8 +199,6 @@ impl<'a> State<'a> {
             0b010 => self.write_word(effective_address, rs2_value), // SW
             _ => panic!("non implemented store instruction")
         }
-
-        println!("{:?}", &self.ram[4096..4120]);
     }
 
     // opcode => type-B instruction.
