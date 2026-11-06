@@ -318,7 +318,7 @@ impl<'a> State<'a> {
             0b110 => rs1_value | sign_extended_imm,
             0b111 => rs1_value & sign_extended_imm,
             0b001 => rs1_value << shamt,
-            0b101 => {if imm > 2048 {(rs1_value as i32 >> (shamt as i32)) as u32} else {rs1_value >> shamt}},
+            0b101 => {if imm >= 2048 {(rs1_value as i32 >> (shamt as i32)) as u32} else {rs1_value >> shamt}},
             _ => panic!("Invalid funct3 input")
         };
         self.registers.write(rd, rd_value);
